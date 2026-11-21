@@ -48,7 +48,7 @@ $python = '.\.venv-cuda\Scripts\python.exe'
 
 ### 3. 训练 SpeciesNet 分类头
 
-预训练主干来自 [Google SpeciesNet 模型页](https://www.kaggle.com/models/google/speciesnet)。主干权重约 214 MiB，不随 Git 克隆下载。可从仓库的 Releases（若已发布附件）或上游模型页下载 `full_image_88545560_22x8_v12_epoch_00153.pt`，放到 `models/speciesnet-v4.0.3b/`，与 `info.json` 同目录。只加载可信来源的权重文件。
+预训练主干来自 [Google SpeciesNet 模型页](https://www.kaggle.com/models/google/speciesnet)。主干权重约 214 MiB，不随 Git 克隆下载。请从 [GitHub Release 下载权重](https://github.com/dxqc-dxqc/DrivenData-Conser-vision-Practice-Area-Image-Classification/releases/tag/speciesnet-v4.0.3b)，将 `full_image_88545560_22x8_v12_epoch_00153.pt` 放到 `models/speciesnet-v4.0.3b/`，与 `info.json` 同目录。只加载可信来源的权重文件。
 
 将 `$split` 改为上一步导出的实际目录：
 
