@@ -1,0 +1,6 @@
+# Python 3.12; install CUDA-enabled PyTorch separately for your CUDA version.
+Pillow
+fluent-blue==0.2.0
+PySide6
+ultralytics
+numpy

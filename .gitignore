@@ -12,6 +12,7 @@ __pycache__/
 /test_features.csv
 /submission*.csv
 !/submission_speciesnet_epoch3.csv
+!/submission_speciesnet_fusion_5050.csv
 /benchmark.ipynb
 /models/*
 !/models/speciesnet-v4.0.3b/

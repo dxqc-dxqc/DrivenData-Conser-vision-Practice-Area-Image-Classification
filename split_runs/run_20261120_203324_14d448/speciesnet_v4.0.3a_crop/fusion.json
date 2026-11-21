@@ -1,0 +1,19 @@
+{
+  "classes": [
+    "antelope_duiker",
+    "bird",
+    "blank",
+    "civet_genet",
+    "hog",
+    "leopard",
+    "monkey_prosimian",
+    "rodent"
+  ],
+  "images": 578,
+  "crop_weight": 0.5,
+  "full_weight": 0.5,
+  "crop_detected": 407,
+  "crop_detection_coverage": 0.7041522491349481,
+  "log_loss": 0.5786372812282186,
+  "accuracy": 0.8304498269896193
+}
