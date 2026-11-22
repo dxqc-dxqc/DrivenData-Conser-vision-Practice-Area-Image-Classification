@@ -1,20 +1,37 @@
 # ConserVision 相机陷阱图像分类
 
-这是我在 DrivenData ConserVision 练习赛中的图像分类实验。我按拍摄站点划分训练集和验证集，冻结 Google SpeciesNet 主干并训练八分类线性头；新方法再用 MegaDetector 定位动物、提取检测框裁剪图的 SpeciesNet 特征，并将裁剪预测与全图预测融合，识别 7 个动物类别和空镜（`blank`）。
+这是 DrivenData ConserVision 相机陷阱图像分类实验。当前方案使用 MegaDetector v6 检测动物，以 SpeciesNet 4.0.3a 提取检测框裁剪特征、训练八分类头，再与 SpeciesNet 4.0.3b 全图分类结果做概率融合。目标是识别 7 个动物类别和空镜（`blank`）。
 
-## 实验结果
+## 最新结果：全图与裁剪融合
 
-验证集含 578 张图片，按拍摄站点与训练集隔离。基线全图模型的 Log Loss 为 **0.61271**，准确率 **81.49%**。50/50 概率融合后，Log Loss 降至 **0.57864**，准确率升至 **83.04%**。MegaDetector 在 578 张验证图中检测到 407 张（覆盖率 70.42%）；未检测到动物的图片沿用全图预测。裁剪分类头单独指标只在检测到动物的样本上计算，不与全量验证结果直接比较。这些是本地验证结果，不是 DrivenData 排行榜成绩。
+在按拍摄站点隔离的 578 张验证图片上，50/50 概率融合达到 **Log Loss 0.57864、准确率 83.04%**。相较全图基线（Log Loss 0.61271、准确率 81.49%），验证 Log Loss 下降约 **5.57%**。MegaDetector 检出 407 张，检测覆盖率 **70.42%**；未检出动物的图片沿用全图预测。以上是本地验证结果，不是 DrivenData 排行榜成绩。
 
 | 产物 | 说明 |
 | --- | --- |
-| [分类头权重](split_runs/run_20261120_203324_14d448/speciesnet_v4.0.3b/best_head.pt) | 自行训练的第 3 轮分类头。 |
-| [验证指标](split_runs/run_20261120_203324_14d448/speciesnet_v4.0.3b/metrics.json) | 各轮指标与最佳轮混淆矩阵。 |
-| [训练日志](speciesnet-training-20261120-223319.log) | 特征提取与 15 轮训练记录。 |
-| [提交 CSV](submission_speciesnet_epoch3.csv) | 第 3 轮模型的测试集预测。 |
-| [50/50 融合提交](submission_speciesnet_fusion_5050.csv) | 新方法对测试集的预测；裁剪概率与全图概率等权融合。 |
-| [裁剪头指标](split_runs/run_20261120_203324_14d448/speciesnet_v4.0.3a_crop/metrics.json) | 训练过程及检测到动物子集上的验证指标。 |
-| [融合评估](split_runs/run_20261120_203324_14d448/speciesnet_v4.0.3a_crop/fusion.json) | 全部 578 张验证图上的 50/50 融合指标。 |
+| [融合提交 CSV](submission_speciesnet_fusion_5050.csv) | 测试集的 50/50 全图与裁剪概率预测。 |
+| [裁剪分类头](split_runs/run_20261120_203324_14d448/speciesnet_v4.0.3a_crop/best_head.pt) | 基于检测框图像训练的八分类头。 |
+| [融合验证指标](split_runs/run_20261120_203324_14d448/speciesnet_v4.0.3a_crop/fusion.json) | 全部 578 张验证图上的融合结果。 |
+| [裁剪头训练指标](split_runs/run_20261120_203324_14d448/speciesnet_v4.0.3a_crop/metrics.json) | 检测到动物的子集指标；不与全量指标直接比较。 |
+
+## 方法
+
+1. 按拍摄站点划分训练集和验证集，避免同一站点泄漏到两侧。
+2. 在全图上使用冻结的 SpeciesNet 4.0.3b 特征训练分类头，作为基础预测。
+3. 使用 MegaDetector v6 YOLOv10-e 定位动物；对检测框扩边后裁剪，再用冻结的 SpeciesNet 4.0.3a always-crop 主干提取特征并训练分类头。
+4. 对检测到动物的图片，将裁剪模型和全图模型的类别概率按 50/50 融合；未检测到动物时回退到全图概率。
+
+裁剪头的单独验证指标仅统计检出动物的图片（407/578）；README 中的融合指标则覆盖完整验证集。
+
+## 历史基线
+
+最初的全图 SpeciesNet 4.0.3b 分类头在同一站点隔离验证集上达到 Log Loss **0.61271**、准确率 **81.49%**。该模型及训练记录保留如下：
+
+| 产物 | 说明 |
+| --- | --- |
+| [全图分类头](split_runs/run_20261120_203324_14d448/speciesnet_v4.0.3b/best_head.pt) | 验证 Log Loss 最佳的第 3 轮权重。 |
+| [全图训练指标](split_runs/run_20261120_203324_14d448/speciesnet_v4.0.3b/metrics.json) | 各轮指标和混淆矩阵。 |
+| [训练日志](speciesnet-training-20261120-223319.log) | 初始全图实验的训练记录。 |
+| [全图提交 CSV](submission_speciesnet_epoch3.csv) | 历史全图模型的测试集预测。 |
 
 ## 项目文件
 
@@ -28,7 +45,6 @@
 | [`export_full_validation_probs.py`](export_full_validation_probs.py) | 从全图特征缓存导出验证集概率，供融合评估使用。 |
 | [`requirements.txt`](requirements.txt) | Python 用户界面和裁剪流程依赖；PyTorch 按本机 CUDA 版本单独安装。 |
 | [`speciesnet-guide.html`](speciesnet-guide.html) | 可在浏览器打开的实验说明。 |
-| [`run_speciesnet_training.ps1`](run_speciesnet_training.ps1) | 旧实验的启动脚本，固定了本地划分路径；新实验请直接使用下文命令。 |
 
 ## 复现实验
 
@@ -54,7 +70,7 @@ $python = '.\.venv-cuda\Scripts\python.exe'
 
 在界面中选择数据目录，勾选验证站点并生成划分。选中站点的全部图片进入验证集，其余站点进入训练集，避免同一拍摄站点同时出现在两边。结果写入数据目录的 `split_runs/run_*`，包含 `train/`、`validation/` 和 `split_summary.json`。图片优先通过硬链接导出，不支持时复制，原始数据不变。
 
-### 3. 训练 SpeciesNet 分类头
+### 3. 训练全图基线
 
 预训练主干来自 [Google SpeciesNet 模型页](https://www.kaggle.com/models/google/speciesnet)。主干权重约 214 MiB，不随 Git 克隆下载。请从 [GitHub Release 下载权重](https://github.com/dxqc-dxqc/DrivenData-Conser-vision-Practice-Area-Image-Classification/releases/tag/speciesnet-v4.0.3b)，将 `full_image_88545560_22x8_v12_epoch_00153.pt` 放到 `models/speciesnet-v4.0.3b/`，与 `info.json` 同目录。只加载可信来源的权重文件。
 
@@ -69,7 +85,7 @@ $split = '.\split_runs\run_实际目录名'
 
 产物写入划分目录下的 `speciesnet_v4.0.3b/`：`best_head.pt` 保存按验证集 Log Loss 选出的分类头，`metrics.json` 记录各轮指标和最佳轮的混淆矩阵，`*_features_*.pt` 是可复用的特征缓存。该训练脚本不生成比赛提交 CSV。
 
-### 4. 训练检测框裁剪分类头并融合
+### 4. 训练检测框裁剪分类头并生成融合提交
 
 该流程使用 SpeciesNet **4.0.3a always-crop** 权重，以及 MegaDetector v6 YOLOv10-e 权重；两者需按各自发布页的说明取得，并分别放入 `models/speciesnet-v4.0.3a/` 和 `models/megadetector/`。默认检测器路径为 `models/megadetector/MDV6-yolov10-e-1280.pt`。权重及许可信息以各上游发布页为准。
 
@@ -88,7 +104,7 @@ $head = "$split\speciesnet_v4.0.3a_crop"
 & $python .\evaluate_crop_full_fusion.py --features $crop --head "$head\best_head.pt" --full "$split\full_validation_probs.csv" --output "$head\fusion.json" --crop-weight 0.5 --submission .\submission_speciesnet_fusion_5050.csv
 ```
 
-融合权重应在独立验证集上确定。README 所列 50/50 结果来自当前站点划分，不应视为排行榜成绩。
+融合权重应在独立验证集上确定。当前实验采用 50/50 权重；评估脚本的 `--crop-weight` 可指定裁剪模型权重，取值范围为 0 到 1。
 
 ## 数据与许可
 
